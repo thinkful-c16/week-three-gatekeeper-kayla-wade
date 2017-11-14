@@ -1,3 +1,4 @@
+'use strict';
 const express = require('express');
 // you'll need to use `queryString` in your `gateKeeper` middleware function
 const queryString = require('query-string');
@@ -65,10 +66,19 @@ const USERS = [
 //     (aka, `req.user = matchedUser`)
 function gateKeeper(req, res, next) {
   const requestHeader = (req.get('x-username-and-password'));
-  console.log('req.get response!:', requestHeader);
-  
+  // console.log('req.get response!:', requestHeader);
+  const parsedHeader = (queryString.parse(requestHeader));
+  // console.log('this is the parsed header!:', parsedHeader);
+  USERS.find(function(user){
+    if (user.userName === parsedHeader.user && user.password === parsedHeader.pass) {
+      req.user = user;
+    } else {
+    req.user = null;
+  }
+    return req.user;
+  });
   next();
-}
+};
 
 app.use(gateKeeper);
 
@@ -79,7 +89,7 @@ app.use(gateKeeper);
 // adds the user object to the request if valid credentials were supplied.
 app.get("/api/users/me", (req, res) => {
   // send an error message if no or wrong credentials sent
-  if (req.user === undefined) {
+  if (req.user === null) {
     return res.status(403).json({message: 'Must supply valid user credentials'});
   }
   // we're only returning a subset of the properties
